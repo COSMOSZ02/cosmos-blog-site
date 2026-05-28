@@ -39,3 +39,23 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 本地草稿
+content/_drafts/
+
+# 摄影原始素材绝对不进仓库
+*.RAW
+*.ARW
+*.NEF
+*.CR3
+*.dng
+photos-raw/
+
+# 系统垃圾
+.DS_Store
+.idea/
+.vscode/
+
+# 环境变量
+.env*.local
+
