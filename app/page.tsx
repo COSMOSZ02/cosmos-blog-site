@@ -1,65 +1,103 @@
-import Image from "next/image";
+import Link from "next/link";
+
+/**
+ * 首页用的占位个人信息。
+ * 后续替换为真实数据时，可以抽到 content/profile.ts 或独立的 mdx 文件。
+ */
+const profile = {
+  name: "宇宙",
+  handle: "@cosmos",
+  title: "前端工程师 / 独立开发者",
+  location: "北京 · Beijing",
+  bio: "热爱构建顺手的工具与克制的产品。最近在折腾博客系统、设计系统与一些个人小项目。",
+  socials: [
+    { label: "GitHub", href: "https://github.com/" },
+    { label: "Email", href: "mailto:hello@example.com" },
+    { label: "X", href: "https://x.com/" },
+  ],
+};
+
+const entries = [
+  {
+    href: "/blog",
+    title: "博客",
+    desc: "关于工程、阅读与生活的长文与碎想。",
+  },
+  {
+    href: "/works",
+    title: "作品集",
+    desc: "做过的产品、写过的代码、按过的快门。",
+  },
+  {
+    href: "/about",
+    title: "关于",
+    desc: "更详细的简历与联系方式。",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-16 sm:py-24">
+      {/* Hero：身份信息 */}
+      <section className="mb-14">
+        <p className="mb-3 font-mono text-sm text-zinc-500 dark:text-zinc-400">
+          {profile.handle}
+        </p>
+        <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+          你好，我是 {profile.name}。
+        </h1>
+        <p className="mt-3 text-base text-zinc-600 dark:text-zinc-300">
+          {profile.title} · {profile.location}
+        </p>
+        <p className="mt-5 max-w-xl text-base leading-7 text-zinc-700 dark:text-zinc-200">
+          {profile.bio}
+        </p>
+
+        <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          {profile.socials.map((s) => (
+            <li key={s.label}>
+              <a
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-300 dark:hover:text-zinc-50"
+              >
+                {s.label} ↗
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* 入口卡片 */}
+      <section>
+        <h2 className="mb-4 text-sm font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          去看看
+        </h2>
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {entries.map((e) => (
+            <li key={e.href}>
+              <Link
+                href={e.href}
+                className="group flex h-full flex-col rounded-lg border border-zinc-200/70 p-4 transition-colors hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/40"
+              >
+                <span className="flex items-center justify-between text-base font-medium">
+                  {e.title}
+                  <span
+                    aria-hidden
+                    className="text-zinc-400 transition-transform group-hover:translate-x-0.5 dark:text-zinc-500"
+                  >
+                    →
+                  </span>
+                </span>
+                <span className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                  {e.desc}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </main>
   );
 }
