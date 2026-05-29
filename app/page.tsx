@@ -1,22 +1,10 @@
 import Link from "next/link";
+import { profile } from "@/lib/profile";
 
 /**
- * 首页用的占位个人信息。
- * 后续替换为真实数据时，可以抽到 content/profile.ts 或独立的 mdx 文件。
+ * 首页"去看看"区块的入口卡片。
+ * 与顶部 Nav 不同，这里需要补一句简介，所以独立维护一份。
  */
-const profile = {
-  name: "宇宙",
-  handle: "@cosmos",
-  title: "前端工程师 / 独立开发者",
-  location: "北京 · Beijing",
-  bio: "热爱构建顺手的工具与克制的产品。最近在折腾博客系统、设计系统与一些个人小项目。",
-  socials: [
-    { label: "GitHub", href: "https://github.com/" },
-    { label: "Email", href: "mailto:hello@example.com" },
-    { label: "X", href: "https://x.com/" },
-  ],
-};
-
 const entries = [
   {
     href: "/blog",
