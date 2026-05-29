@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { profile } from "@/lib/profile";
+import { getAllContent } from "@/lib/mdx";
 
 /**
  * 首页"去看看"区块的入口卡片。
@@ -23,7 +24,16 @@ const entries = [
   },
 ];
 
-export default function Home() {
+/** 首页"最新文章"展示数量。 */
+const RECENT_POSTS_LIMIT = 3;
+
+export default async function Home() {
+  // 构建期取最新 N 篇文章，与 /blog 列表共享同一份数据来源
+  const recentPosts = (await getAllContent("posts")).slice(
+    0,
+    RECENT_POSTS_LIMIT,
+  );
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-16 sm:py-24">
       {/* Hero：身份信息 */}
@@ -56,6 +66,51 @@ export default function Home() {
           ))}
         </ul>
       </section>
+
+      {/* 最新文章 */}
+      {recentPosts.length > 0 && (
+        <section className="mb-14">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-sm font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              最新文章
+            </h2>
+            <Link
+              href="/blog"
+              className="text-xs text-zinc-500 underline-offset-4 hover:text-zinc-800 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+            >
+              查看全部 →
+            </Link>
+          </div>
+
+          <ol className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
+            {recentPosts.map((post) => (
+              <li key={post.slug}>
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="group block py-4 first:pt-0 last:pb-0"
+                >
+                  <div className="flex items-baseline justify-between gap-4">
+                    <h3 className="text-base font-medium text-zinc-900 group-hover:underline dark:text-zinc-100">
+                      {post.title}
+                    </h3>
+                    <time
+                      dateTime={post.date}
+                      className="shrink-0 font-mono text-xs text-zinc-500 dark:text-zinc-400"
+                    >
+                      {post.date}
+                    </time>
+                  </div>
+                  {post.excerpt && (
+                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                      {post.excerpt}
+                    </p>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {/* 入口卡片 */}
       <section>

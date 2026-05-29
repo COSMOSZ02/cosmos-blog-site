@@ -44,19 +44,23 @@
 - Next 16 App Router 路由骨架：`/`、`/blog`、`/blog/[slug]`、`/works`、`/works/[slug]`、`/about`
 - 三层错误兜底：`not-found.tsx` / `error.tsx` / `global-error.tsx`
 - 内容管线 `lib/mdx.ts`：`server-only` + `React.cache` + 路径穿越校验 + draft 过滤 + 阅读时长
+- MDX 编译选项 SSOT `lib/mdx-options.ts`：remark-gfm + rehype-slug + rehype-autolink-headings + rehype-pretty-code（`github-dark-dimmed`）
+- 全局导航：`components/layout/{Nav,Footer}.tsx`，Nav 含移动端汉堡菜单
+- 站点信息 SSOT：`lib/profile.ts`，Nav / Footer / Home 共享
+- 首页"最新文章"模块：取 `getAllContent("posts")` 前 3 条
 - TypeScript strict + ESLint 0 warning
 - 安全响应头（X-CTO / X-FO / Referrer / Permissions / HSTS）+ 远程图片白名单
-- 首页 hero + 三个入口卡片（假数据写死）
+- 真实内容样本：`content/posts/hello-world.mdx`、`content/works/this-blog.mdx`
 
-### 未完成 / 阻塞演示
-- 没有真实文章 / 作品（`content/{posts,works}` 只有模板）
-- 没有全局 Nav / Footer
-- 详情页 `prose` 类未生效（缺 `@tailwindcss/typography`）
-- MDX 没接代码高亮 / 标题锚点（依赖装了但没传给 `<MDXRemote>`）
-- 首页缺"最新文章"模块
-- `/about` 是裸占位
+### 未完成 / 已知缺口
+- `/about` 仍是裸占位（迭代 2 会改成 mdx 渲染）
+- 列表页日期未本地化、未按年份分组（迭代 2）
+- 暗黑模式只跟系统，无手动切换（迭代 2）
+- 详情页无 TOC、无 loading 骨架屏（迭代 2）
+- `app/layout.tsx` 的 metadata 仍是 `Create Next App`（迭代 4，已声明暂缓）
+- 仅 1 篇真实文章 + 1 件作品
 
-**整体 MVP 完成度估算：约 55%**
+**整体 MVP 完成度估算：迭代 1 全部完成，约 70%**
 
 完整评估详见对话历史中的"项目全面评估报告"，本文件只保留**可执行的任务清单**。
 
@@ -78,8 +82,8 @@
 - [x] **P0-5** 写 2 篇真实 mdx 用于验收：
   - `content/posts/hello-world.mdx`（含 H2/H3、列表、代码块、引用、表格、图片）— 验收 P0-3、P0-4
   - `content/works/this-blog.mdx`（介绍这个博客本身）— 自我闭环
-- [ ] **P0-6** 首页加"最新 3 篇文章"模块：用 `getAllContent("posts")` 取前 3 条
-- [ ] **P0-7** 删掉 `styles/` 空目录（或在里面建实际样式文件，二选一）
+- [x] **P0-6** 首页加"最新 3 篇文章"模块：用 `getAllContent("posts")` 取前 3 条
+- [x] **P0-7** 删掉 `styles/` 空目录（或在里面建实际样式文件，二选一）
 
 **完成标准**：能用一台陌生设备打开站点，感受到"这是一个完整的小博客，有作者介绍 / 导航 / 文章 / 作品 / 兜底页"。
 
@@ -144,6 +148,7 @@
 - 2026-05-29 · 创建 ROADMAP，迭代尚未开始
 - 2026-05-29 · 迭代 1 · 完成项：P0-1, P0-2, P0-3 · 备注：新增 `lib/profile.ts` 作为站点信息单一来源；`components/layout/{Nav,Footer}.tsx` 接入 RootLayout，Nav 含移动端汉堡菜单；安装并通过 `@plugin` 加载 `@tailwindcss/typography`。`pnpm lint` / `tsc --noEmit` / `pnpm build` 全部通过。
 - 2026-05-29 · 迭代 1 · 完成项：P0-4, P0-5 · 备注：抽 `lib/mdx-options.ts` 作为 MDX 编译选项 SSOT；评估后**不抽** `<MDXContent />` 组件（blog 长文 vs works 摄影/项目，差异会扩大，YAGNI）。两个详情页接入 `options={mdxOptions}`。新增 `content/posts/hello-world.mdx`（覆盖 H2/H3/列表/代码/引用/表格/图片）与 `content/works/this-blog.mdx`（项目作品自我介绍）。`pnpm build` 输出 9 个静态路由含 `/blog/hello-world` 与 `/works/this-blog`。
+- 2026-05-29 · 迭代 1 · 完成项：P0-6, P0-7 · 备注：首页新增"最新文章"区块（最多展示 3 篇 + "查看全部"链接，与 hero 和"去看看"卡片样式区分使用 divide-y 列表风格，更轻盈）；删除空目录 `styles/`，全仓 0 处引用。**迭代 1 全部完成**，`pnpm lint` / `pnpm build` 全绿，9 个静态路由全部正常。
 
 ---
 
