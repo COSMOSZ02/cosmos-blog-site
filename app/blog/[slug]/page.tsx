@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getContentBySlug } from "@/lib/mdx";
+import { mdxOptions } from "@/lib/mdx-options";
 
 /**
  * 构建期生成所有 slug 的静态页。
@@ -57,7 +58,7 @@ export default async function BlogPostPage({
       </header>
 
       <article className="prose prose-zinc max-w-none dark:prose-invert">
-        <MDXRemote source={post.raw} />
+        <MDXRemote source={post.raw} options={mdxOptions} />
       </article>
     </main>
   );

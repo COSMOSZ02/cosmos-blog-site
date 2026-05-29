@@ -71,12 +71,12 @@
   - Footer：站点 © + 社交链接（与首页 socials 复用同一份 source）
 - [x] **P0-2** 抽 `lib/profile.ts`，把首页假数据搬过去；让 Footer / Nav / Home 共享同一个 source of truth
 - [x] **P0-3** 安装并配置 `@tailwindcss/typography`（Tailwind 4 用法是在 `globals.css` 里 `@plugin`），让详情页 `prose` 真正生效
-- [ ] **P0-4** 给 `<MDXRemote>` 接上 mdxOptions：
+- [x] **P0-4** 抽 `lib/mdx-options.ts` 作为 MDX 编译选项的单一来源，给两个详情页的 `<MDXRemote>` 接上 `options={mdxOptions}`：
   - `remarkPlugins: [remarkGfm]`
-  - `rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, { behavior: "wrap" }], [rehypePrettyCode, { theme: "github-dark-dimmed" }]]`
-  - 抽出 `components/blog/MDXContent.tsx`，让两个详情页复用
-- [ ] **P0-5** 写 2 篇真实 mdx 用于验收：
-  - `content/posts/hello-world.mdx`（含 H2/H3、列表、代码块、图片）— 验收 P0-3、P0-4
+  - `rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, { behavior: "wrap" }], [rehypePrettyCode, { theme: "github-dark-dimmed", keepBackground: false }]]`
+  - **不抽 `<MDXContent />` 组件**：blog（长文）与 works（摄影 / 项目）是两种不同的内容形态，未来注入的 MDX 组件、容器样式都会分化，过早抽组件会强行收敛差异（YAGNI）。两个详情页各自保留一行 `<MDXRemote ... />` 即可。
+- [x] **P0-5** 写 2 篇真实 mdx 用于验收：
+  - `content/posts/hello-world.mdx`（含 H2/H3、列表、代码块、引用、表格、图片）— 验收 P0-3、P0-4
   - `content/works/this-blog.mdx`（介绍这个博客本身）— 自我闭环
 - [ ] **P0-6** 首页加"最新 3 篇文章"模块：用 `getAllContent("posts")` 取前 3 条
 - [ ] **P0-7** 删掉 `styles/` 空目录（或在里面建实际样式文件，二选一）
@@ -143,6 +143,7 @@
 
 - 2026-05-29 · 创建 ROADMAP，迭代尚未开始
 - 2026-05-29 · 迭代 1 · 完成项：P0-1, P0-2, P0-3 · 备注：新增 `lib/profile.ts` 作为站点信息单一来源；`components/layout/{Nav,Footer}.tsx` 接入 RootLayout，Nav 含移动端汉堡菜单；安装并通过 `@plugin` 加载 `@tailwindcss/typography`。`pnpm lint` / `tsc --noEmit` / `pnpm build` 全部通过。
+- 2026-05-29 · 迭代 1 · 完成项：P0-4, P0-5 · 备注：抽 `lib/mdx-options.ts` 作为 MDX 编译选项 SSOT；评估后**不抽** `<MDXContent />` 组件（blog 长文 vs works 摄影/项目，差异会扩大，YAGNI）。两个详情页接入 `options={mdxOptions}`。新增 `content/posts/hello-world.mdx`（覆盖 H2/H3/列表/代码/引用/表格/图片）与 `content/works/this-blog.mdx`（项目作品自我介绍）。`pnpm build` 输出 9 个静态路由含 `/blog/hello-world` 与 `/works/this-blog`。
 
 ---
 

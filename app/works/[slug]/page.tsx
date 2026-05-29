@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getContentBySlug } from "@/lib/mdx";
+import { mdxOptions } from "@/lib/mdx-options";
 
 export async function generateStaticParams() {
   const slugs = await getAllSlugs("works");
@@ -47,7 +48,7 @@ export default async function WorkDetailPage({
       </header>
 
       <article className="prose prose-zinc max-w-none dark:prose-invert">
-        <MDXRemote source={work.raw} />
+        <MDXRemote source={work.raw} options={mdxOptions} />
       </article>
     </main>
   );

@@ -1,0 +1,87 @@
+---
+title: "你好，世界 · 启用这个博客"
+date: "2026-05-29"
+excerpt: "记录这个博客的第一篇文章，顺便测试排版、代码高亮与列表分组。"
+tags: ["杂记", "博客"]
+---
+
+这是这个博客的第一篇文章。它有两个目的：
+
+1. 给以后路过的朋友打个招呼；
+2. 把内容管线里所有"会被读者看到的"细节都过一遍 —— 标题、列表、引用、代码、表格、图片，一项不漏。
+
+如果你看到这一段时排版**整齐有致**、代码**有了配色**、表格**有了边框**，那就说明 `@tailwindcss/typography` 与 `rehype-pretty-code` 都正常在工作。
+
+## 为什么写一个新博客
+
+互联网上当然不缺博客系统，但我想要的版本一直没出现：
+
+- 启动时间 < 5 秒，不需要先点 10 个 GitHub OAuth 弹窗
+- 没有评论区、没有点赞、没有"猜你喜欢"
+- 文章是普通的 mdx 文件，删除一篇就是 `rm` 一个文件
+- 字体是 Geist，行距是 1.7，背景安安静静
+
+那就自己写。
+
+### 技术选型一瞥
+
+| 层级 | 选择 | 备注 |
+| ---- | ---- | ---- |
+| 框架 | Next.js 16 (App Router) | 全静态化，无服务器副作用 |
+| 样式 | Tailwind CSS 4 | 用 `@plugin` 接入 typography |
+| 内容 | mdx + gray-matter | front-matter 严格校验 |
+| 高亮 | rehype-pretty-code + Shiki | `github-dark-dimmed` 主题 |
+
+## 一段代码块的样子
+
+下面这段是 `lib/mdx.ts` 里负责防止路径穿越的判定，可以直观看到代码高亮的效果。
+
+```ts
+function resolveContentPath(collection: Collection, slug: string): string {
+  if (!/^[a-zA-Z0-9._-]+$/.test(slug)) {
+    throw new Error(`[mdx] 非法 slug: ${slug}`);
+  }
+  const collectionDir = path.join(CONTENT_ROOT, COLLECTIONS[collection]);
+  const filePath = path.join(collectionDir, `${slug}.mdx`);
+
+  // 二次防御：解析后的路径必须仍在 collection 目录内
+  const normalized = path.normalize(filePath);
+  if (!normalized.startsWith(collectionDir + path.sep)) {
+    throw new Error(`[mdx] slug 越界: ${slug}`);
+  }
+  return normalized;
+}
+```
+
+行内代码也很常见，比如 `process.env.NODE_ENV === "production"` 时会过滤掉 `draft: true` 的文章。
+
+### 顺便看一段 shell
+
+```bash
+pnpm install
+pnpm dev
+# 然后访问 http://localhost:3000
+```
+
+## 一段引用
+
+> 写作的真正目的不是被人读懂，而是替自己想清楚一件事。
+>
+> —— 某位早起跑步时听播客的人
+
+## 一张配图占位
+
+下方是一张图片占位。等真正接入 CDN 之后会换成真实素材。
+
+![一张占位风景图](https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80)
+
+## 接下来要做什么
+
+- [x] 把第一篇文章发出来（就是这一篇）
+- [ ] 详情页加目录（TOC）
+- [ ] 列表页按年份分组
+- [ ] 暗黑模式做手动切换
+
+如果你有任何意见 —— 哪怕只是觉得行距不舒服 —— 欢迎通过页脚的邮箱告诉我。
+
+— 写于 2026 年 5 月 29 日，北京
