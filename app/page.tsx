@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { profile } from "@/lib/profile";
 import { getAllContent } from "@/lib/mdx";
+import { formatDate } from "@/lib/date";
 
 /**
  * 首页"去看看"区块的入口卡片。
@@ -97,7 +98,7 @@ export default async function Home() {
                       dateTime={post.date}
                       className="shrink-0 font-mono text-xs text-zinc-500 dark:text-zinc-400"
                     >
-                      {post.date}
+                      {formatDate(post.date)}
                     </time>
                   </div>
                   {post.excerpt && (

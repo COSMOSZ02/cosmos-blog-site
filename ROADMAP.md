@@ -53,14 +53,11 @@
 - 真实内容样本：`content/posts/hello-world.mdx`、`content/works/this-blog.mdx`
 
 ### 未完成 / 已知缺口
-- `/about` 仍是裸占位（迭代 2 会改成 mdx 渲染）
-- 列表页日期未本地化、未按年份分组（迭代 2）
-- 暗黑模式只跟系统，无手动切换（迭代 2）
-- 详情页无 TOC、无 loading 骨架屏（迭代 2）
+- 详情页无 TOC、无 loading 骨架屏（迭代 2 P1-5 / P1-6）
 - `app/layout.tsx` 的 metadata 仍是 `Create Next App`（迭代 4，已声明暂缓）
 - 仅 1 篇真实文章 + 1 件作品
 
-**整体 MVP 完成度估算：迭代 1 全部完成，约 70%**
+**整体 MVP 完成度估算：迭代 1 完成 + 迭代 2 完成 P1-1/P1-2/P1-3/P1-4，约 87%**
 
 完整评估详见对话历史中的"项目全面评估报告"，本文件只保留**可执行的任务清单**。
 
@@ -91,13 +88,18 @@
 
 ## 4. 迭代 2 · 内容体验打磨（P1，2-3 个工作日）
 
-- [ ] **P1-1** `app/about/page.tsx` 改为读 `content/about.mdx`，用 `MDXContent` 渲染（让"关于"页也走 MDX 体系）
-- [ ] **P1-2** 列表页日期格式化：用 `date-fns` 输出 `2026-05-28 → 2026 年 5 月 28 日` 或 `5 月 28 日, 2026`
-- [ ] **P1-3** 列表页按年份分组（`grouped = groupBy(posts, p => p.date.slice(0,4))`）
-- [ ] **P1-4** 暗黑模式手动切换：
-  - 改 `globals.css` 用 `@variant dark (&:where(.dark, .dark *))`（Tailwind 4 写法）
-  - 加 `components/ui/ThemeToggle.tsx`（client）
-  - `<head>` 内联无闪烁脚本（受控来源，可用 `dangerouslySetInnerHTML`）
+- [x] **P1-1** `app/about/page.tsx` 改为读 `content/about.mdx`，复用 `mdxOptions` 渲染。新增 `getSinglePage(name)` 走单页路径，不污染 `posts/works` collection 抽象。
+- [x] **P1-2** 日期统一格式化为 `YYYY年MM月DD日`（月日两位补零）：抽 `lib/date.ts` 的 `formatDate`，未引入 `date-fns/format`（用原生 `Date`，保留 `<time dateTime={iso}>` 用于 a11y/SEO）。已接入 home / blog / works 列表 + blog / works 详情。
+- [x] **P1-3** 列表页按年份分组：抽 `lib/date.ts` 的 `groupByYear`（用 `Map` 保插入顺序，无需重新排序）。blog / works 列表都改为左侧 sticky 年份 + 右侧 divide-y 列表的双列布局，移动端自动堆叠。
+- [x] **P1-4** 暗黑模式手动切换 · **三档（light / dark / system），默认 light**：
+  - `globals.css` 用 `@custom-variant dark (&:where(.dark, .dark *))`（Tailwind 4 类切换）
+  - 颜色 SSOT：`lib/theme.ts` 导出 `themeTokens`，每个颜色形如 `{ light, dark }`；`compileThemeCss()` 编译为 `:root { --x } / :root.dark { --x }`
+  - `components/theme/`：
+    - `ThemeStyles.tsx`（server）注入颜色变量
+    - `ThemeScript.tsx` 在 `<head>` 同步执行 FOUC 防护脚本
+    - `ThemeProvider.tsx` 用 `useSyncExternalStore` 订阅 localStorage + matchMedia（避开 React 19 `set-state-in-effect` 规则）
+    - `ThemeToggle.tsx` 三档循环按钮，已接入 Nav 右侧
+  - `<html>` 加 `suppressHydrationWarning`（dark class 由内联脚本注入，是预期内的差异）
 - [ ] **P1-5** 详情页加"目录（TOC）"：从 `rehype-slug` 注入的 id 提取，desktop 右侧 sticky，mobile 折叠
 - [ ] **P1-6** 加 `app/loading.tsx`（最小骨架屏）
 
@@ -149,12 +151,14 @@
 - 2026-05-29 · 迭代 1 · 完成项：P0-1, P0-2, P0-3 · 备注：新增 `lib/profile.ts` 作为站点信息单一来源；`components/layout/{Nav,Footer}.tsx` 接入 RootLayout，Nav 含移动端汉堡菜单；安装并通过 `@plugin` 加载 `@tailwindcss/typography`。`pnpm lint` / `tsc --noEmit` / `pnpm build` 全部通过。
 - 2026-05-29 · 迭代 1 · 完成项：P0-4, P0-5 · 备注：抽 `lib/mdx-options.ts` 作为 MDX 编译选项 SSOT；评估后**不抽** `<MDXContent />` 组件（blog 长文 vs works 摄影/项目，差异会扩大，YAGNI）。两个详情页接入 `options={mdxOptions}`。新增 `content/posts/hello-world.mdx`（覆盖 H2/H3/列表/代码/引用/表格/图片）与 `content/works/this-blog.mdx`（项目作品自我介绍）。`pnpm build` 输出 9 个静态路由含 `/blog/hello-world` 与 `/works/this-blog`。
 - 2026-05-29 · 迭代 1 · 完成项：P0-6, P0-7 · 备注：首页新增"最新文章"区块（最多展示 3 篇 + "查看全部"链接，与 hero 和"去看看"卡片样式区分使用 divide-y 列表风格，更轻盈）；删除空目录 `styles/`，全仓 0 处引用。**迭代 1 全部完成**，`pnpm lint` / `pnpm build` 全绿，9 个静态路由全部正常。
+- 2026-06-02 · 迭代 2 · 完成项：P1-1, P1-2, P1-3 · 备注：新增 `lib/date.ts`（`formatDate` 输出 `YYYY年MM月DD日`、`getYear`、`groupByYear`），原生 `Date` 实现避免 `date-fns/format` bundle；blog / works 列表改造为"左侧 sticky 年份 + 右侧 divide-y"双列布局，移动端自动堆叠；`/about` 改为读 `content/about.mdx`，新增 `getSinglePage(name)` 走单页路径不污染 collection 抽象。`pnpm lint` / `pnpm build` 全绿。
+- 2026-06-02 · 迭代 2 · 完成项：P1-4 · 备注：暗黑模式手动切换，三档（light / dark / system，默认 light）。颜色 SSOT 抽到 `lib/theme.ts` 的 `themeTokens`，结构 `{ name: { light, dark } }`，`compileThemeCss()` 编译为 `:root` / `:root.dark` 的 CSS 变量；`globals.css` 切换为 `@custom-variant dark (&:where(.dark, .dark *))`（删除原 `@media prefers-color-scheme`）；`<head>` 内联 `ThemeScript` 同步注入 dark class，无 FOUC；`ThemeProvider` 用 `useSyncExternalStore` 订阅 localStorage + matchMedia，绕开 React 19 `react-hooks/set-state-in-effect`；`ThemeToggle` 加入 Nav 右侧。`pnpm lint` / `pnpm build` 全绿。
 
 ---
 
 ## 9. 待讨论 / 待用户确认
 
-- [ ] 暗黑模式（P1-4）是否做手动切换？还是只跟系统？
+- [x] 暗黑模式（P1-4）是否做手动切换？→ **已确认：做手动切换，三档 light/dark/system，默认 light**（2026-06-02）
 - [ ] TOC（P1-5）按移动端优先还是桌面优先做？（项目默认无 PC 适配约束，需用户确认）
 - [ ] 是否引入 zod（P2-3）？引入后 bundle 会增加约 8KB（gzip）。
 - [ ] CI（P2-6）平台用 GitHub Actions 还是 Vercel 自带？

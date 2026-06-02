@@ -202,3 +202,67 @@ export const getAllSlugs = cache(
     return items.map((it) => it.slug);
   },
 );
+
+/* -------------------------------------------------------------------------- */
+/*  单页 MDX（不属于任何 collection，例如 /about）                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * 单页 front-matter。
+ * 比 collection 简单：只要求 `title`，无 `date` / `tags` / `excerpt`。
+ */
+export interface SinglePageFrontMatter {
+  title: string;
+  description?: string;
+}
+
+export interface SinglePage extends SinglePageFrontMatter {
+  /** MDX 正文原文 */
+  raw: string;
+}
+
+/** 单页文件名白名单：仅小写字母 + 连字符。 */
+const SINGLE_PAGE_NAME_RE = /^[a-z][a-z0-9-]*$/;
+
+/**
+ * 读取 `content/<name>.mdx` 这样的单页 MDX。
+ *
+ * - 与 collection 完全隔离：单页文件直接放在 `content/` 根下，
+ *   不会出现在 `getAllContent("posts")` 等列表里；
+ * - 文件名必须满足 `[a-z][a-z0-9-]*`，避免目录穿越；
+ * - 文件不存在返回 `null`，由调用方决定走 notFound 还是回退。
+ */
+export const getSinglePage = cache(
+  async (name: string): Promise<SinglePage | null> => {
+    if (!SINGLE_PAGE_NAME_RE.test(name)) {
+      throw new Error(`[mdx] 非法单页名: ${name}`);
+    }
+    const filePath = path.join(CONTENT_ROOT, `${name}.mdx`);
+    const normalized = path.normalize(filePath);
+    if (!normalized.startsWith(CONTENT_ROOT + path.sep)) {
+      throw new Error(`[mdx] 单页越界: ${name}`);
+    }
+
+    let file: string;
+    try {
+      file = await fs.readFile(normalized, "utf8");
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return null;
+      throw err;
+    }
+
+    const { data, content } = matter(file);
+    const raw = data as Record<string, unknown>;
+
+    if (typeof raw.title !== "string" || raw.title.trim() === "") {
+      throw new Error(`[mdx] ${name}.mdx 缺少必填字段 title`);
+    }
+
+    return {
+      title: raw.title,
+      description:
+        typeof raw.description === "string" ? raw.description : undefined,
+      raw: content,
+    };
+  },
+);

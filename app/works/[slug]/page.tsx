@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getContentBySlug } from "@/lib/mdx";
 import { mdxOptions } from "@/lib/mdx-options";
+import { formatDate } from "@/lib/date";
 
 export async function generateStaticParams() {
   const slugs = await getAllSlugs("works");
@@ -37,7 +38,7 @@ export default async function WorkDetailPage({
           {work.title}
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400">
-          <time dateTime={work.date}>{work.date}</time>
+          <time dateTime={work.date}>{formatDate(work.date)}</time>
           {work.tags && work.tags.length > 0 && (
             <>
               <span aria-hidden>·</span>

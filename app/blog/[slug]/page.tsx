@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getContentBySlug } from "@/lib/mdx";
 import { mdxOptions } from "@/lib/mdx-options";
+import { formatDate } from "@/lib/date";
 
 /**
  * 构建期生成所有 slug 的静态页。
@@ -45,7 +46,7 @@ export default async function BlogPostPage({
           {post.title}
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400">
-          <time dateTime={post.date}>{post.date}</time>
+          <time dateTime={post.date}>{formatDate(post.date)}</time>
           <span aria-hidden>·</span>
           <span>{post.readingTimeText}</span>
           {post.tags && post.tags.length > 0 && (

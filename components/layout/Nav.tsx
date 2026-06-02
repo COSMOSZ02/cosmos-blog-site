@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { profile } from "@/lib/profile";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 /**
  * 顶部全局导航。
@@ -43,42 +44,46 @@ export function Nav() {
           <span className="text-zinc-400 dark:text-zinc-500">.</span>
         </Link>
 
-        {/* Desktop nav */}
-        <nav aria-label="主导航" className="hidden sm:block">
-          <ul className="flex items-center gap-6 text-sm">
-            {profile.nav.map((item) => {
-              const active = isActive(pathname, item.href);
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "underline-offset-[6px] transition-colors",
-                      active
-                        ? "text-zinc-900 underline dark:text-zinc-50"
-                        : "text-zinc-500 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-50",
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+        {/* 右侧：desktop nav + 主题切换；mobile 仅展示主题切换 + 汉堡 */}
+        <div className="flex items-center gap-1 sm:gap-5">
+          <nav aria-label="主导航" className="hidden sm:block">
+            <ul className="flex items-center gap-6 text-sm">
+              {profile.nav.map((item) => {
+                const active = isActive(pathname, item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "underline-offset-[6px] transition-colors",
+                        active
+                          ? "text-zinc-900 underline dark:text-zinc-50"
+                          : "text-zinc-500 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-50",
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
 
-        {/* Mobile toggler */}
-        <button
-          type="button"
-          aria-label={open ? "关闭菜单" : "打开菜单"}
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 sm:hidden dark:text-zinc-200 dark:hover:bg-zinc-800/60"
-        >
-          {open ? <X size={18} /> : <Menu size={18} />}
-        </button>
+          <ThemeToggle />
+
+          {/* Mobile toggler */}
+          <button
+            type="button"
+            aria-label={open ? "关闭菜单" : "打开菜单"}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            onClick={() => setOpen((v) => !v)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 sm:hidden dark:text-zinc-200 dark:hover:bg-zinc-800/60"
+          >
+            {open ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile dropdown */}

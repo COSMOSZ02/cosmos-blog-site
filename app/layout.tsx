@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Nav } from "@/components/layout/Nav";
 import { Footer } from "@/components/layout/Footer";
+import { ThemeStyles } from "@/components/theme/ThemeStyles";
+import { ThemeScript } from "@/components/theme/ThemeScript";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,12 +30,21 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
+      // suppressHydrationWarning：<ThemeScript /> 会在 hydration 前给 <html>
+      // 加上 dark class，这是预期内的客户端 / 服务端差异，无需 React 报警。
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <ThemeStyles />
+        <ThemeScript />
+      </head>
       <body className="min-h-full flex flex-col">
-        <Nav />
-        {children}
-        <Footer />
+        <ThemeProvider>
+          <Nav />
+          {children}
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );
