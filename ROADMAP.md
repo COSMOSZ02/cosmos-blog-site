@@ -57,7 +57,7 @@
 - 仅 1 篇真实文章 + 1 件作品
 - TOC 当前阅读位置高亮（IntersectionObserver）尚未实现，作为后续增强
 
-**整体 MVP 完成度估算：迭代 1 + 迭代 2 全部完成，约 92%**（剩余主要是技术债 / 发布相关）
+**整体 MVP 完成度估算：迭代 1 + 迭代 2 + 迭代 3 全部完成，约 95%**（剩余仅迭代 4 发布 / 可观测，已声明暂缓）
 
 完整评估详见对话历史中的"项目全面评估报告"，本文件只保留**可执行的任务清单**。
 
@@ -113,13 +113,17 @@
 
 ## 5. 迭代 3 · 技术债务清理（P2，半天到 1 天）
 
-- [ ] **P2-1** 删除 `next.config.ts` 中无效的 `*.cos.ap-*.myqcloud.com` 多段通配（`*.myqcloud.com` 已覆盖）
-- [ ] **P2-2** `@types/node` 升到 `^22`，本机 Node 同步升到 22 LTS
-- [ ] **P2-3** 把 front-matter 校验改成 `zod` schema（替换 `normalizeFrontMatter`），错误信息更友好
-- [ ] **P2-4** 写 `lib/mdx.test.ts`（vitest）：覆盖路径穿越、`draft` 过滤、必填字段缺失、空目录
-- [ ] **P2-5** 抽 `app/{blog,works}/[slug]/page.tsx` 公共部分到 `components/blog/ArticleLayout.tsx`，详情页只剩 collection 名称差异
-- [ ] **P2-6** 加 `.github/workflows/ci.yml`：`pnpm lint && pnpm tsc --noEmit && pnpm build`
-- [ ] **P2-7** 决定 `components/{blog,layout,ui,works}/` 子目录命名规范（建议 PascalCase 文件名 + 小写目录），写在 `AGENTS.md` 末尾
+- [x] **P2-1** 修订 `next.config.ts` 的 `images.remotePatterns`：删除无效的多段通配 `*.cos.ap-*.myqcloud.com`；同时把 `*.myqcloud.com` / `*.aliyuncs.com` / `*.r2.cloudflarestorage.com` 全部改为前缀 `**.` 通配，因为云存储真实域名都是多段子域（单 `*` 只匹配一段，无法命中 `bucket.cos.ap-shanghai.myqcloud.com` 这类域）。加注释说明 `*` vs `**` 区别避免后人改错。
+- [x] **P2-2** 升 `@types/node` 到 `^22`（实测 22.19.20）+ `package.json` 加 `engines: { node: ">=20.18" }`。本机 Node 由用户自行升级（任务范围外）。`pnpm install` / `pnpm lint` / `pnpm exec tsc --noEmit` / `pnpm build` 全绿。
+- [x] **P2-3** 把 front-matter 校验改成 `zod` schema：新增 `lib/content-schema.ts` 集中两个 schema（article / single-page），类型用 `z.infer<>` 推导（避免 schema/类型漂移）；`parseFrontMatter()` 把 ZodError 格式化为多行可读错误（`校验失败：\n  - <path>: <msg>`）。`lib/mdx.ts` 删除 `normalizeFrontMatter` 与 `getSinglePage` 内联校验。**严格化**：`date` 必须 `YYYY-MM-DD` 格式（`z.iso.date()`）、`tags` 元素必须非空字符串（不再静默过滤）。验证：临时把合法 date 改为非法值，`pnpm build` 准确抛出"校验失败：\n  - date: date 必须是 YYYY-MM-DD 格式"，证明拦截链路通畅。
+- [x] **P2-4** 引入 `vitest@^3` 单元测试框架（vitest 4.x 因 rolldown native binding 在 pnpm 严格 hoisting 下失败，降到 3.x）；新增 `vitest.config.mts`（含 `server-only` alias stub 和 `@/` 别名）+ `tests/stubs/server-only.ts`；新增 `pnpm test` / `pnpm test:watch` script。覆盖范围：
+  - **`lib/content-schema.test.ts`**（22 用例）：schema 合法/非法路径、date 6 种格式、tags 严格化、draft 缺省、错误信息聚合、`parseFrontMatter` 抛错路径
+  - **`lib/mdx.test.ts`**（10 用例）：`isContentFile` 约定、`resolveContentPath` 路径穿越（`../etc/passwd` / `foo/bar` / 特殊字符 / 空 slug）、`listSlugs` 真实 fixtures + 过滤
+  - 把 `lib/mdx.ts` 中 `isContentFile` / `resolveContentPath` / `listSlugs` 改为 export（纯函数，零风险）以便单测
+  - 不做端到端 `getAllContent` 集成测试，留待内容增多后按需补
+- [x] **P2-5（降级版）** 评估后**不抽** `<ArticleLayout>` 大组件 —— 原 ROADMAP 描述"详情页只剩 collection 名称差异"与现实不符（blog 有 TOC + readingTime，works 有 cover 倾向但无 TOC，演进路径会进一步分化），过早合并会引入大量"开关 prop"。仅抽 `components/ui/BackLink.tsx`（4 行视觉惯用语 → 通用组件），blog/works 详情页接入。这一改动为未来新增 detail 页（notes / talks）打基础，不强行收敛差异。
+- [x] **P2-6** 新增 `.github/workflows/ci.yml`：单 job `verify`，按 install (frozen-lockfile) → lint → tsc --noEmit → test → build 顺序执行（**比原 ROADMAP 多了 `pnpm test`**，因 P2-4 已引入 vitest）。触发：push master + 任意 PR。`concurrency` 自动取消同 ref 的过期 run 节省 quota。Node 22 + pnpm 8.15.6 与本机 / `engines.node` 对齐。本地完整模拟 CI 链路通过。
+- [x] **P2-7** `AGENTS.md` 追加 "Components 命名与组织规范" 一节：明确目录边界（ui / layout / theme / `<route>`）、PascalCase 文件名 + 命名导出 + 不用 `.client/.server` 后缀 + 何时新建二级目录。同时删除已无意义的 `components/.gitkeep`（4 个二级目录已实际存在）。零代码改动 / 不引入 lint 强制规则（约定 + Code review 即可）。
 
 **完成标准**：内部代码可持续迭代，未来加内容/页面不需要复制粘贴。
 
@@ -158,6 +162,13 @@
 - 2026-06-02 · 迭代 2 · 完成项：P1-1, P1-2, P1-3 · 备注：新增 `lib/date.ts`（`formatDate` 输出 `YYYY年MM月DD日`、`getYear`、`groupByYear`），原生 `Date` 实现避免 `date-fns/format` bundle；blog / works 列表改造为"左侧 sticky 年份 + 右侧 divide-y"双列布局，移动端自动堆叠；`/about` 改为读 `content/about.mdx`，新增 `getSinglePage(name)` 走单页路径不污染 collection 抽象。`pnpm lint` / `pnpm build` 全绿。
 - 2026-06-02 · 迭代 2 · 完成项：P1-4 · 备注：暗黑模式手动切换，三档（light / dark / system，默认 light）。颜色 SSOT 抽到 `lib/theme.ts` 的 `themeTokens`，结构 `{ name: { light, dark } }`，`compileThemeCss()` 编译为 `:root` / `:root.dark` 的 CSS 变量；`globals.css` 切换为 `@custom-variant dark (&:where(.dark, .dark *))`（删除原 `@media prefers-color-scheme`）；`<head>` 内联 `ThemeScript` 同步注入 dark class，无 FOUC；`ThemeProvider` 用 `useSyncExternalStore` 订阅 localStorage + matchMedia，绕开 React 19 `react-hooks/set-state-in-effect`；`ThemeToggle` 加入 Nav 右侧。`pnpm lint` / `pnpm build` 全绿。
 - 2026-06-02 · 迭代 2 · 完成项：P1-5, P1-6 · 备注：新增 `lib/toc.ts` 的 `extractHeadings()`（用 `github-slugger` 与 rehype-slug 同款 id 算法，处理代码围栏 / 强调标记），`components/blog/TableOfContents.tsx` 双 variant（collapsible / static）；blog 详情页 lg+ 浮在主体右侧 sticky，lg 以下 details 折叠；works 不接 TOC（摄影/项目场景）。新增 `app/loading.tsx` 全局骨架屏（animate-pulse 灰条 + a11y）。验证：HTML 中 `id=` 与 TOC `href=` 7 个锚点完全对应。`pnpm lint` / `pnpm build` 全绿。**迭代 2 全部完成。**
+- 2026-06-10 · 迭代 3 · 完成项：P2-1 · 备注：修订 `next.config.ts` 的 `remotePatterns`：删除无效多段通配 `*.cos.ap-*.myqcloud.com`；将所有 `*.<host>` 改为 `**.<host>`（Next 的单 `*` 只匹配一段子域，无法命中云存储多段子域如 `bucket.cos.ap-shanghai.myqcloud.com`）。加注释说明 `*` vs `**` 差异。`pnpm lint` / `pnpm build` 全绿。
+- 2026-06-10 · 迭代 3 · 完成项：P2-2 · 备注：`@types/node` 从 20.19.41 升级到 22.19.20；`package.json` 新增 `engines: { node: ">=20.18" }`（宽松下限，兼容当前与未来）。本机 Node 升级由用户自行处理。`pnpm lint` + `tsc --noEmit` + `pnpm build` 全绿。
+- 2026-06-10 · 迭代 3 · 完成项：P2-3 · 备注：引入 `zod@4.4.3`（仅 server-only 路径使用，客户端 bundle 零影响）；新增 `lib/content-schema.ts` 集中 `articleFrontMatterSchema` / `singlePageFrontMatterSchema`，类型 `z.infer<>` 推导；`parseFrontMatter()` 包装 ZodError 为多行可读错误。删除 `lib/mdx.ts` 的 `normalizeFrontMatter` 与单页内联校验。严格化：`date` 必须 `YYYY-MM-DD`、`tags` 元素必须非空字符串。反向测试：临时改 date 为非法值，build 准确抛出"`校验失败：\n  - date: date 必须是 YYYY-MM-DD 格式`"；`git checkout` 还原后 build 重新通过。
+- 2026-06-10 · 迭代 3 · 完成项：P2-4 · 备注：引入 `vitest@^3`（vitest 4 + pnpm 严格 hoisting 有 rolldown native binding 缺失问题，降到 3）；`vitest.config.mts` 走 `.mts` 强制 ESM 加载（避免 vite 7 ESM 与 vitest 3 cjs config loader 在 Node 20.18 下的 ERR_REQUIRE_ESM）；`server-only` alias 替换为空 stub。新增 32 个用例（schema 22 + IO 10）：合法/非法 front-matter、date 严格 ISO、tags 严格化、错误聚合、路径穿越、文件名约定、listSlugs 真实 fixtures。`pnpm test` / `pnpm lint` / `tsc --noEmit` / `pnpm build` 全绿。
+- 2026-06-10 · 迭代 3 · 完成项：P2-5（降级版） · 备注：评估后**不抽** `<ArticleLayout>` 大组件（原任务前提"只剩 collection 名称差异"与现实不符），仅抽 `components/ui/BackLink.tsx` —— blog/works 详情页接入。决策理由：blog（长文 + TOC + 阅读时长）与 works（图文作品集，无 TOC）演进路径分化，过早合并会引入开关 prop 复杂度，符合 P0-4 已确立的"不强行收敛差异"原则。32 个测试全绿。
+- 2026-06-10 · 迭代 3 · 完成项：P2-6 · 备注：新增 `.github/workflows/ci.yml`（GitHub Actions）。单 job 按 install (frozen-lockfile) → lint → tsc → test → build 顺序执行；触发 push master + PR；`concurrency` 取消重复 run 节省 quota；Node 22 + pnpm 8.15.6 与本机对齐。比原 ROADMAP 描述多了 `pnpm test`（P2-4 引入的 vitest 32 用例）。本地完整模拟链路通过。
+- 2026-06-10 · 迭代 3 · 完成项：P2-7 · 备注：`AGENTS.md` 追加 "Components 命名与组织规范" 一节（目录边界 / PascalCase / 命名导出 / 不用 `.client.tsx` 后缀 / 何时新建二级目录）；删除 `components/.gitkeep`。**迭代 3 全部完成** —— 迭代 1+2+3 全部 P0/P1/P2 任务收尾。
 
 ---
 
@@ -165,8 +176,8 @@
 
 - [x] 暗黑模式（P1-4）是否做手动切换？→ **已确认：做手动切换，三档 light/dark/system，默认 light**（2026-06-02）
 - [x] TOC（P1-5）按移动端优先还是桌面优先做？→ **已确认：桌面右侧 sticky 为主，移动端 details/summary 折叠**（2026-06-02）
-- [ ] 是否引入 zod（P2-3）？引入后 bundle 会增加约 8KB（gzip）。
-- [ ] CI（P2-6）平台用 GitHub Actions 还是 Vercel 自带？
+- [x] 是否引入 zod（P2-3）？→ **已确认：引入**（2026-06-10）。修正：之前估算"bundle +8KB"有误，实际 zod 仅在 `lib/mdx.ts`（server-only）使用，**对客户端 bundle 零影响**。
+- [x] CI（P2-6）平台用 GitHub Actions 还是 Vercel 自带？→ **已确认：GitHub Actions**（2026-06-10）。理由：Vercel 自带 CI 只跑 `next build`，无法覆盖 lint / tsc / vitest；二者并存（Actions 跑测试链 + Vercel 跑预览部署）是最佳实践。
 
 ---
 

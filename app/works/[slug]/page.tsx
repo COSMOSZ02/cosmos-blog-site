@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getContentBySlug } from "@/lib/mdx";
 import { mdxOptions } from "@/lib/mdx-options";
 import { formatDate } from "@/lib/date";
+import { BackLink } from "@/components/ui/BackLink";
 
 export async function generateStaticParams() {
   const slugs = await getAllSlugs("works");
@@ -24,14 +24,7 @@ export default async function WorkDetailPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
-      <nav className="mb-6 text-sm">
-        <Link
-          href="/works"
-          className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-        >
-          ← 返回作品集
-        </Link>
-      </nav>
+      <BackLink href="/works" text="返回作品集" />
 
       <header className="mb-8">
         <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">

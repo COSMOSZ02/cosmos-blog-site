@@ -1,0 +1,55 @@
+name: CI
+
+# 触发条件：
+# - push 到 master：保护主分支不被破坏的代码合入
+# - 任意 pull_request：在 PR 上提供 status check
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# 同一分支 / PR 的新提交会自动取消正在排队 / 运行中的旧 job，节省 Actions quota。
+# 主分支的连续 push 不取消（不写 master 例外，因为这里 ref 也会变），
+# 取消的只是同一 ref 下的过期 run。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: lint / typecheck / test / build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 必须先装 pnpm，再装 node + 启用 pnpm cache
+      # 版本与 package.json 的 packageManager 字段一致（8.15.6）
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      # --frozen-lockfile：禁止自动调整 lockfile，
+      # 强制本地与 CI 的依赖图完全一致；漂移时直接 fail，避免静默问题。
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 按由快到慢的顺序排步骤 —— 早 fail，省 CI 时间
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

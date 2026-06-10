@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getContentBySlug } from "@/lib/mdx";
 import { mdxOptions } from "@/lib/mdx-options";
 import { formatDate } from "@/lib/date";
 import { extractHeadings } from "@/lib/toc";
 import { TableOfContents } from "@/components/blog/TableOfContents";
+import { BackLink } from "@/components/ui/BackLink";
 
 /**
  * 构建期生成所有 slug 的静态页。
@@ -36,14 +36,7 @@ export default async function BlogPostPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
-      <nav className="mb-6 text-sm">
-        <Link
-          href="/blog"
-          className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-        >
-          ← 返回列表
-        </Link>
-      </nav>
+      <BackLink href="/blog" text="返回列表" />
 
       <header className="mb-8">
         <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">

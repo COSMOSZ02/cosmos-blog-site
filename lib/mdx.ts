@@ -6,6 +6,14 @@ import { cache } from "react";
 import matter from "gray-matter";
 import readingTime from "reading-time";
 
+import {
+  type ArticleFrontMatter,
+  type SinglePageFrontMatter,
+  articleFrontMatterSchema,
+  singlePageFrontMatterSchema,
+  parseFrontMatter,
+} from "./content-schema";
+
 /**
  * 内容集合定义。
  * - 在 content/ 下新增同名目录即可扩展（例如未来加入 notes / talks）。
@@ -20,21 +28,13 @@ export type Collection = keyof typeof COLLECTIONS;
 const CONTENT_ROOT = path.join(process.cwd(), "content");
 
 /**
- * Front-matter 通用字段。
- * 所有字段做了「宽松解析 + 严格出参」的处理：
- * - 解析时用 unknown 接收，避免 gray-matter 把任意值塞进来导致下游崩溃；
- * - 出参时统一为已校验的类型。
+ * 类型从 zod schema 推导，与 `lib/content-schema.ts` 保持单一来源。
+ * 这两个 type alias 只是给 lib/mdx 的下游导出更友好的命名，
+ * schema 才是真正的"事实"。
  */
-export interface FrontMatter {
-  title: string;
-  date: string; // ISO 字符串，原样保留以便上层用 date-fns 处理时区
-  excerpt?: string;
-  tags?: string[];
-  cover?: string;
-  draft?: boolean;
-}
+export type { ArticleFrontMatter, SinglePageFrontMatter };
 
-export interface ContentMeta extends FrontMatter {
+export interface ContentMeta extends ArticleFrontMatter {
   slug: string;
   collection: Collection;
   readingTimeMinutes: number; // 向上取整的分钟数
@@ -55,8 +55,10 @@ const isProd = process.env.NODE_ENV === "production";
  * 判断文件是否为有效的 MDX 内容文件：
  * - 后缀必须是 .mdx
  * - 文件名不能以 _ 或 . 开头（约定为模板/隐藏文件）
+ *
+ * Exported for unit tests; production usage 仅通过 `listSlugs()` 内部调用。
  */
-function isContentFile(filename: string): boolean {
+export function isContentFile(filename: string): boolean {
   if (!filename.endsWith(".mdx")) return false;
   if (filename.startsWith("_")) return false;
   if (filename.startsWith(".")) return false;
@@ -64,41 +66,14 @@ function isContentFile(filename: string): boolean {
 }
 
 /**
- * 把任意 front-matter 输入收敛到 FrontMatter 形态。
- * 对必需字段缺失的内容直接抛错，避免静默渲染出错误页面。
- */
-function normalizeFrontMatter(
-  raw: Record<string, unknown>,
-  source: string,
-): FrontMatter {
-  const title = raw.title;
-  const date = raw.date;
-
-  if (typeof title !== "string" || title.trim() === "") {
-    throw new Error(`[mdx] ${source} 缺少必填字段 title`);
-  }
-  if (typeof date !== "string" || date.trim() === "") {
-    throw new Error(`[mdx] ${source} 缺少必填字段 date`);
-  }
-
-  const tags = Array.isArray(raw.tags)
-    ? raw.tags.filter((t): t is string => typeof t === "string")
-    : undefined;
-
-  return {
-    title,
-    date,
-    excerpt: typeof raw.excerpt === "string" ? raw.excerpt : undefined,
-    tags,
-    cover: typeof raw.cover === "string" ? raw.cover : undefined,
-    draft: typeof raw.draft === "boolean" ? raw.draft : false,
-  };
-}
-
-/**
  * 安全地把 slug 解析回磁盘上的文件路径，防止 ../ 之类的路径穿越。
+ *
+ * Exported for unit tests; 生产代码内部调用即可。
  */
-function resolveContentPath(collection: Collection, slug: string): string {
+export function resolveContentPath(
+  collection: Collection,
+  slug: string,
+): string {
   // slug 仅允许字母/数字/连字符/下划线/点，避免目录穿越
   if (!/^[a-zA-Z0-9._-]+$/.test(slug)) {
     throw new Error(`[mdx] 非法 slug: ${slug}`);
@@ -117,8 +92,10 @@ function resolveContentPath(collection: Collection, slug: string): string {
 /**
  * 读取一个集合下的所有 MDX 文件名（不含后缀），按目录遍历。
  * 目录不存在时返回空数组（容忍空集合）。
+ *
+ * Exported for unit tests。
  */
-async function listSlugs(collection: Collection): Promise<string[]> {
+export async function listSlugs(collection: Collection): Promise<string[]> {
   const dir = path.join(CONTENT_ROOT, COLLECTIONS[collection]);
   let entries: string[];
   try {
@@ -149,8 +126,9 @@ export const getContentBySlug = cache(
     }
 
     const { data, content } = matter(file);
-    const fm = normalizeFrontMatter(
-      data as Record<string, unknown>,
+    const fm = parseFrontMatter(
+      articleFrontMatterSchema,
+      data,
       `${collection}/${slug}.mdx`,
     );
 
@@ -207,15 +185,6 @@ export const getAllSlugs = cache(
 /*  单页 MDX（不属于任何 collection，例如 /about）                              */
 /* -------------------------------------------------------------------------- */
 
-/**
- * 单页 front-matter。
- * 比 collection 简单：只要求 `title`，无 `date` / `tags` / `excerpt`。
- */
-export interface SinglePageFrontMatter {
-  title: string;
-  description?: string;
-}
-
 export interface SinglePage extends SinglePageFrontMatter {
   /** MDX 正文原文 */
   raw: string;
@@ -252,16 +221,14 @@ export const getSinglePage = cache(
     }
 
     const { data, content } = matter(file);
-    const raw = data as Record<string, unknown>;
-
-    if (typeof raw.title !== "string" || raw.title.trim() === "") {
-      throw new Error(`[mdx] ${name}.mdx 缺少必填字段 title`);
-    }
+    const fm = parseFrontMatter(
+      singlePageFrontMatterSchema,
+      data,
+      `${name}.mdx`,
+    );
 
     return {
-      title: raw.title,
-      description:
-        typeof raw.description === "string" ? raw.description : undefined,
+      ...fm,
       raw: content,
     };
   },

@@ -20,11 +20,15 @@ const remotePatterns: NonNullable<
         },
       ]
     : []),
-  // 预留：业务对象存储 / CDN 通配
-  { protocol: "https", hostname: "*.myqcloud.com", pathname: "/**" },
-  { protocol: "https", hostname: "*.cos.ap-*.myqcloud.com", pathname: "/**" },
-  { protocol: "https", hostname: "*.aliyuncs.com", pathname: "/**" },
-  { protocol: "https", hostname: "*.r2.cloudflarestorage.com", pathname: "/**" },
+  // 注意：Next 的 hostname 通配中，单 `*` 只匹配 **一段** 子域；
+  // 主流云存储真实域名都是多段子域，例如：
+  //   bucketname-12345.cos.ap-shanghai.myqcloud.com
+  //   foo.oss-cn-shanghai.aliyuncs.com
+  // 因此必须用前缀 `**.`（匹配任意层级子域）。
+  // 不要改回单 `*.`，否则白名单看似生效但实际命不中。
+  { protocol: "https", hostname: "**.myqcloud.com", pathname: "/**" },
+  { protocol: "https", hostname: "**.aliyuncs.com", pathname: "/**" },
+  { protocol: "https", hostname: "**.r2.cloudflarestorage.com", pathname: "/**" },
 ];
 
 /**
