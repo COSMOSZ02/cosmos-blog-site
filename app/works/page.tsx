@@ -1,6 +1,19 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllContent } from "@/lib/mdx";
 import { formatDate, groupByYear } from "@/lib/date";
+
+export const metadata: Metadata = {
+  title: "作品",
+  description: "做过的产品、写过的代码、按过的快门。",
+  alternates: { canonical: "/works" },
+  openGraph: {
+    title: "作品",
+    description: "做过的产品、写过的代码、按过的快门。",
+    url: "/works",
+    type: "website",
+  },
+};
 
 export default async function WorksPage() {
   const works = await getAllContent("works");

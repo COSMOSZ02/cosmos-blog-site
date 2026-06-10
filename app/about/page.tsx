@@ -1,7 +1,28 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getSinglePage } from "@/lib/mdx";
 import { mdxOptions } from "@/lib/mdx-options";
+
+/**
+ * About 页 metadata：从 `content/about.mdx` front-matter 推导，
+ * 让"内容文件"成为 SEO 文案的唯一来源。
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getSinglePage("about");
+  if (!page) return { title: "关于" };
+  return {
+    title: page.title,
+    description: page.description,
+    alternates: { canonical: "/about" },
+    openGraph: {
+      title: page.title,
+      description: page.description,
+      url: "/about",
+      type: "profile",
+    },
+  };
+}
 
 export default async function AboutPage() {
   const page = await getSinglePage("about");

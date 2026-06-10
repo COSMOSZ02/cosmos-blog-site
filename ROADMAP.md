@@ -53,11 +53,12 @@
 - 真实内容样本：`content/posts/hello-world.mdx`、`content/works/this-blog.mdx`
 
 ### 未完成 / 已知缺口
-- `app/layout.tsx` 的 metadata 仍是 `Create Next App`（迭代 4，已声明暂缓）
-- 仅 1 篇真实文章 + 1 件作品
+- 仅 1 篇真实文章 + 1 件作品（**内容侧**任务，非工程任务）
 - TOC 当前阅读位置高亮（IntersectionObserver）尚未实现，作为后续增强
+- 尚未购买域名（`NEXT_PUBLIC_SITE_URL` 未填）；当前 `metadataBase` 走 Vercel 自动注入的 `*.vercel.app` 子域
+- CSP 处于 Report-Only 观察期；待部署后浏览观察，无违规即切正式头（R5 风险登记）
 
-**整体 MVP 完成度估算：迭代 1 + 迭代 2 + 迭代 3 全部完成，约 95%**（剩余仅迭代 4 发布 / 可观测，已声明暂缓）
+**整体 MVP 完成度估算：迭代 1 + 2 + 3 + 4 全部 P0/P1/P2/P3 任务收尾，约 100%**
 
 完整评估详见对话历史中的"项目全面评估报告"，本文件只保留**可执行的任务清单**。
 
@@ -129,14 +130,36 @@
 
 ---
 
-## 6. 迭代 4 · 发布与可观测（P3，1 天，用户已声明暂缓）
+## 6. 迭代 4 · 发布与可观测（P3，已完成）
 
-- [ ] **P3-1** `app/layout.tsx` `metadata` 改为站点真实信息 + `metadataBase`
-- [ ] **P3-2** `app/sitemap.ts`、`app/robots.ts`（Next 16 内置 API）
-- [ ] **P3-3** OG 图：`app/opengraph-image.tsx`（动态生成）、`app/{blog,works}/[slug]/opengraph-image.tsx`
-- [ ] **P3-4** JSON-LD：详情页 `Article schema`
-- [ ] **P3-5** CSP：先 `Content-Security-Policy-Report-Only` 上线观察，再切正式头
-- [ ] **P3-6** 接入 `@vercel/speed-insights` 或自托管的轻量分析
+- [x] **P3-1** 完整 metadata 体系：
+  - 前置 `lib/site.ts`：`getSiteUrl()` 解析链 `NEXT_PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `http://localhost:3000`，未购域名不会卡住
+  - 扩 `lib/profile.ts`：新增 `siteDescription`（站点视角，与 hero 用的第一人称 `bio` 区分）、`locale: "zh_CN"`、`twitterHandle`
+  - `app/layout.tsx` 根 metadata：`metadataBase` + `title.template` (`%s · 宇宙`) + applicationName + authors + 默认 OG/Twitter + `robots: index, follow`
+  - 静态子页面 `/blog`、`/works` 直接 `export const metadata`；`/about` 用 `generateMetadata` 从 `content/about.mdx` front-matter 推导
+  - 详情页 `/blog/[slug]`、`/works/[slug]` 用 `generateMetadata({ params })`，含 `og:type=article` + `article:published_time` + `article:tag`
+  - README 追加"环境变量与部署"章节，说明买域名前后的切换路径
+  - 验证：实际 HTML 含完整 `<title>` / canonical / og:* / twitter:* / article:tag 等 meta
+- [x] **P3-2** `app/sitemap.ts` + `app/robots.ts`（Next 16 metadata file convention，构建期编译为 `/sitemap.xml` / `/robots.txt`）：
+  - sitemap 包含 home + `/blog`、`/works`、`/about` 静态页 + 全部 blog/works 详情；详情页 `lastModified` 取 front-matter date（不取 mtime）
+  - `changeFrequency` / `priority` 按页面类型分级（home 1.0 / 列表页 0.8 / about 0.6 / 详情 0.7）
+  - robots 全开放（无 admin / 私有路由），含 Host + Sitemap 字段
+  - URL 全部经过 `lib/site.ts` 解析链：本地构建用 `localhost:3000`，Vercel 自动切到 `*.vercel.app`，未来配 `NEXT_PUBLIC_SITE_URL` 切自定义域 —— 全部 6 条 URL 验证产物正确
+- [x] **P3-3（中范围）** OG 图混合方案：
+  - 根 `app/opengraph-image.tsx`：动态生成（next/og + edge runtime），1200×630 简约线条版式 —— 大字 `cosmos.` + 顶部 `@cosmos` + 底部 `frontend · writing · photography`
+  - **不加载中文字体**（避免 satori 在 Edge runtime 加载 Noto Sans SC 子集 ~500KB+ 的成本与不稳定），OG 图文案统一用拉丁字符；HTML 中的 `og:title` / `twitter:title` 等文本仍是中文（社媒平台原生支持）
+  - 详情页 `og:image`：`generateMetadata` 中接 `cover` 字段 → 有 cover 用文章 / 作品自己的封面，无 cover 不出图（社媒回落到根 OG）
+  - 验证：home HTML 含完整 og:image / twitter:image 五件套；blog/works 详情无 cover 时 HTML 无 og:image（设计如此）
+  - **不做** `app/{blog,works}/[slug]/opengraph-image.tsx` 动态生成兜底（成本不匹配，留待真有需要再升级）
+- [x] **P3-4（中范围）** JSON-LD 结构化数据：
+  - `lib/structured-data.ts`：`articleJsonLd(post)` → `BlogPosting` schema；`workJsonLd(work)` → `CreativeWork` schema（摄影 / 项目作品的最自然类型）
+  - `components/ui/JsonLd.tsx`：通用 server component，渲染 `<script type="application/ld+json">`
+  - blog/works 详情页接入；author 节点复用（共享 Person）；image / keywords 等可选字段缺失时由 `JSON.stringify` 自动跳过
+  - `inLanguage` 用 BCP 47 `zh-CN`（与 OG 的 `zh_CN` 区分）
+  - **不做** `WebSite` schema（个人站作用很小）、不做 `BreadcrumbList`（站内已有"返回列表"按钮）
+  - 验证 HTML：两个详情页 JSON-LD 完整正确，无 cover 时自动省略 image 字段
+- [x] **P3-5** CSP Report-Only 上线观察。`next.config.ts` 加 `cspDirectives` 常量（10 条 directive：default/script/style/img/font/connect/frame-ancestors/base-uri/form-action/upgrade-insecure-requests）+ 详细注释说明每条选择理由。运行时验证 6 个安全响应头全部下发：`Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline'; ...`。**关键设计决定**：保留 `'unsafe-inline'`（因 Next 16 RSC + ThemeScript / JsonLd 内联块），不上 nonce 中间件方案（与全 SSG 架构冲突）。下一步：部署后浏览器 DevTools 观察违规，再切到正式 `Content-Security-Policy` 头。
+- [x] **P3-6** 接入 `@vercel/analytics` + `@vercel/speed-insights`：在 `app/layout.tsx` 的 `<body>` 末尾、`ThemeProvider` 之外挂 `<Analytics />` + `<SpeedInsights />`。隐私友好（不用 cookie / 不收集 PII）；非 Vercel 平台 / 本地 dev 自动 no-op。README 追加"访客分析"说明 + 顺手补回 P3-1 时丢失的"环境变量与部署"完整章节（含站点 URL 解析链 / 一键部署 / CI / 内容发布流程 / 安全响应头与 CSP）。
 
 ---
 
@@ -148,6 +171,7 @@
 | R2 | 远程图片不在白名单 | `next/image` 运行时报错 | 写文档说明白名单维护方式 |
 | R3 | `dynamicParams=false` + 新文章未 rebuild → 404 | 新增内容必须重新构建 | 写入 README "发布流程" 段；后期可改 ISR |
 | R4 | 公私环境变量语义混淆 | `NEXT_PUBLIC_*` 会进客户端 bundle | 在 `lib/profile.ts` 里集中读取，注释写清 |
+| R5 | CSP 切到正式头时打挂资源 | 现 Report-Only 漏配 directive 在正式头下变拦截 | 部署到 Vercel preview 后浏览各页面观察 DevTools 控制台违规；调整后再切正式头 |
 
 ---
 
@@ -169,6 +193,12 @@
 - 2026-06-10 · 迭代 3 · 完成项：P2-5（降级版） · 备注：评估后**不抽** `<ArticleLayout>` 大组件（原任务前提"只剩 collection 名称差异"与现实不符），仅抽 `components/ui/BackLink.tsx` —— blog/works 详情页接入。决策理由：blog（长文 + TOC + 阅读时长）与 works（图文作品集，无 TOC）演进路径分化，过早合并会引入开关 prop 复杂度，符合 P0-4 已确立的"不强行收敛差异"原则。32 个测试全绿。
 - 2026-06-10 · 迭代 3 · 完成项：P2-6 · 备注：新增 `.github/workflows/ci.yml`（GitHub Actions）。单 job 按 install (frozen-lockfile) → lint → tsc → test → build 顺序执行；触发 push master + PR；`concurrency` 取消重复 run 节省 quota；Node 22 + pnpm 8.15.6 与本机对齐。比原 ROADMAP 描述多了 `pnpm test`（P2-4 引入的 vitest 32 用例）。本地完整模拟链路通过。
 - 2026-06-10 · 迭代 3 · 完成项：P2-7 · 备注：`AGENTS.md` 追加 "Components 命名与组织规范" 一节（目录边界 / PascalCase / 命名导出 / 不用 `.client.tsx` 后缀 / 何时新建二级目录）；删除 `components/.gitkeep`。**迭代 3 全部完成** —— 迭代 1+2+3 全部 P0/P1/P2 任务收尾。
+- 2026-06-10 · 迭代 4 · 完成项：P3-1 · 备注：完整 metadata 体系。前置 `lib/site.ts` 站点 URL 解析链（适配未购域名场景，Vercel 自动注入兜底）；`lib/profile.ts` 加 `siteDescription` / `locale` / `twitterHandle`；根 layout `metadataBase` + `title.template`；6 个页面（3 静态 + 2 动态详情 + 1 single-page）补 metadata，约束信息从 mdx front-matter / profile 派生不重复硬编码；README 追加"环境变量与部署"章节。验证：HTML 实测含完整 title/canonical/og:*/twitter:*/article:tag。`pnpm lint` / `tsc --noEmit` / `pnpm test` (32) / `pnpm build` 全绿。
+- 2026-06-10 · 迭代 4 · 完成项：P3-2 · 备注：`app/sitemap.ts` + `app/robots.ts`（Next 16 metadata file convention）。sitemap 6 条 URL（home + 3 静态 + 全部 blog/works 详情），详情页 lastModified 取 front-matter date；按页面类型分级 priority 与 changeFrequency。robots 全开放，含 Host + Sitemap。验证 prerender 缓存的 .body 文件，URL/字段全部正确，未来切自定义域时 base URL 会跟随 metadataBase 自动切换。
+- 2026-06-10 · 迭代 4 · 完成项：P3-3（中范围） · 备注：根 `app/opengraph-image.tsx` 动态生成（next/og + edge runtime），1200×630 简约线条版式（拉丁字符 cosmos. + 三联领域），**不加载中文字体**避开 Edge runtime 字体踩坑；详情页 og:image 走"front-matter cover 优先"策略，无 cover 不出图（社媒回落到根 OG）。修复 P3-1 时 works/[slug] generateMetadata 没保存的小遗漏。验证 home HTML 含完整 og:image 五件套；详情无 cover 时 HTML 确实无 og:image。`pnpm lint` / `tsc --noEmit` / `pnpm build` 全绿。
+- 2026-06-10 · 迭代 4 · 完成项：P3-4（中范围） · 备注：JSON-LD 结构化数据。`lib/structured-data.ts` 提供 `articleJsonLd`（BlogPosting）与 `workJsonLd`（CreativeWork）；`components/ui/JsonLd.tsx` 通用 server component。两个详情页接入，author/publisher 复用 Person 节点；inLanguage 用 BCP 47 `zh-CN`；undefined 字段（如无 cover 时的 image）由 JSON.stringify 自动跳过。验证 HTML 注入完整。32 测试 / lint / build 全绿。
+- 2026-06-10 · 迭代 4 · 完成项：P3-5 · 备注：`next.config.ts` 添加 `Content-Security-Policy-Report-Only` 头，10 条 directive，含详细注释。**保留** `'unsafe-inline'`：Next 16 RSC + ThemeScript / JsonLd 内联块需要；nonce 方案会与全 SSG 架构冲突。`pnpm start` curl 验证 6 个安全头全部正确下发。R5 风险登记：部署到 Vercel preview 后须浏览观察 DevTools 控制台违规再切正式头。
+- 2026-06-10 · 迭代 4 · 完成项：P3-6 · 备注：装 `@vercel/analytics@2.0.1` + `@vercel/speed-insights@2.0.0`，在 `app/layout.tsx` body 末尾挂载。隐私友好（无 cookie / 无 PII）；非 Vercel 平台 / 本地 dev 自动 no-op。顺手补回 P3-1 时丢失的 README "环境变量与部署" 章节（含 URL 解析链、Vercel 一键部署、CI、内容发布流程、安全响应头与 CSP、访客分析 6 节）。**迭代 4 全部完成 —— 全部 4 个迭代 / 26 项任务收尾。**
 
 ---
 

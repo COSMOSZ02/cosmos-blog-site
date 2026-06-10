@@ -1,6 +1,19 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllContent } from "@/lib/mdx";
 import { formatDate, groupByYear } from "@/lib/date";
+
+export const metadata: Metadata = {
+  title: "博客",
+  description: "关于工程、阅读与生活的长文与碎想。",
+  alternates: { canonical: "/blog" },
+  openGraph: {
+    title: "博客",
+    description: "关于工程、阅读与生活的长文与碎想。",
+    url: "/blog",
+    type: "website",
+  },
+};
 
 export default async function BlogPage() {
   const posts = await getAllContent("posts");

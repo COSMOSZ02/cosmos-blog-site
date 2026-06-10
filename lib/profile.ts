@@ -29,8 +29,26 @@ export type Profile = {
   title: string;
   /** 所在地 */
   location: string;
-  /** 一句话简介（首页 bio 段落） */
+  /**
+   * 一句话简介（首页 bio 段落，**第一人称视角**）。
+   * 用于人对人的展示场景；SEO / 元数据请用 `siteDescription`。
+   */
   bio: string;
+  /**
+   * 站点描述（**第三人称 / 站点视角**），用于 `<meta name="description">`、
+   * OG description、sitemap 等 SEO 场景。
+   */
+  siteDescription: string;
+  /**
+   * 站点语言。用于 `<html lang>` 与 `openGraph.locale`。
+   * 与 `app/layout.tsx` 的 `<html lang="zh-CN">` 保持一致。
+   */
+  locale: string;
+  /**
+   * Twitter / X 用户名（不含 @），用于 `twitter:creator` / `twitter:site`。
+   * 留空则不输出对应 meta。
+   */
+  twitterHandle?: string;
   /** 顶部导航 */
   nav: readonly NavLink[];
   /** 社交链接（首页 / Footer 共享） */
@@ -46,6 +64,10 @@ export const profile: Profile = {
   title: "前端工程师 / 独立开发者",
   location: "北京 · Beijing",
   bio: "热爱构建顺手的工具与克制的产品。最近在折腾博客系统、设计系统与一些个人小项目。",
+  siteDescription:
+    "宇宙的个人空间：前端开发、科普文章与风光 / 天文摄影作品集。一个克制、可读的小博客。",
+  locale: "zh_CN",
+  twitterHandle: undefined,
   nav: [
     { label: "博客", href: "/blog" },
     { label: "作品", href: "/works" },

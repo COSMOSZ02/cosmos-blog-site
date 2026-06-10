@@ -1,11 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getContentBySlug } from "@/lib/mdx";
 import { mdxOptions } from "@/lib/mdx-options";
 import { formatDate } from "@/lib/date";
 import { extractHeadings } from "@/lib/toc";
+import { articleJsonLd } from "@/lib/structured-data";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { BackLink } from "@/components/ui/BackLink";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 /**
  * 构建期生成所有 slug 的静态页。
@@ -22,6 +25,50 @@ export async function generateStaticParams() {
  */
 export const dynamicParams = false;
 
+/**
+ * 文章 metadata：构建期从 mdx front-matter 推导。
+ * canonical / OG url 都用站内相对路径，靠根 metadataBase 自动展开为 absolute。
+ *
+ * og:image 策略：
+ * - 有 `cover` 字段（front-matter）→ 用文章自己的封面图作为 og:image
+ * - 无 `cover` → 不输出 og:image，社交平台会回落到根 `/opengraph-image`
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getContentBySlug("posts", slug);
+  if (!post) return {};
+
+  const url = `/blog/${slug}`;
+  const images = post.cover
+    ? [{ url: post.cover, alt: post.title }]
+    : undefined;
+
+  return {
+    title: post.title,
+    description: post.excerpt,
+    alternates: { canonical: url },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      url,
+      type: "article",
+      publishedTime: post.date,
+      tags: post.tags,
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: post.cover ? [post.cover] : undefined,
+    },
+  };
+}
+
 export default async function BlogPostPage({
   params,
 }: {
@@ -36,6 +83,7 @@ export default async function BlogPostPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
+      <JsonLd data={articleJsonLd(post)} />
       <BackLink href="/blog" text="返回列表" />
 
       <header className="mb-8">
