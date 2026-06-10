@@ -4,6 +4,8 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getContentBySlug } from "@/lib/mdx";
 import { mdxOptions } from "@/lib/mdx-options";
 import { formatDate } from "@/lib/date";
+import { extractHeadings } from "@/lib/toc";
+import { TableOfContents } from "@/components/blog/TableOfContents";
 
 /**
  * 构建期生成所有 slug 的静态页。
@@ -29,6 +31,8 @@ export default async function BlogPostPage({
   const post = await getContentBySlug("posts", slug);
 
   if (!post) notFound();
+
+  const headings = extractHeadings(post.raw);
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
@@ -57,6 +61,25 @@ export default async function BlogPostPage({
           )}
         </div>
       </header>
+
+      {/*
+        TOC：
+        - lg 以下（含移动端 / 平板）：details/summary 折叠形式，出现在文章上方
+        - lg+：fixed 浮在主体右侧空白处，跟随视口；
+          位置公式 lg:right-[max(1rem,calc((100vw-48rem)/2-14rem))]
+          —— 让目录始终留在 main（max-w-3xl=48rem）的右侧白边里，
+          屏幕足够宽时贴中线偏右，屏幕较窄时贴 1rem 边距，永远不和文字重叠。
+      */}
+      <TableOfContents
+        items={headings}
+        variant="collapsible"
+        className="mb-8 lg:hidden"
+      />
+      <TableOfContents
+        items={headings}
+        variant="static"
+        className="hidden lg:block lg:fixed lg:top-24 lg:w-52 lg:right-[max(1rem,calc((100vw-48rem)/2-14rem))] lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto"
+      />
 
       <article className="prose prose-zinc max-w-none dark:prose-invert">
         <MDXRemote source={post.raw} options={mdxOptions} />

@@ -53,11 +53,11 @@
 - 真实内容样本：`content/posts/hello-world.mdx`、`content/works/this-blog.mdx`
 
 ### 未完成 / 已知缺口
-- 详情页无 TOC、无 loading 骨架屏（迭代 2 P1-5 / P1-6）
 - `app/layout.tsx` 的 metadata 仍是 `Create Next App`（迭代 4，已声明暂缓）
 - 仅 1 篇真实文章 + 1 件作品
+- TOC 当前阅读位置高亮（IntersectionObserver）尚未实现，作为后续增强
 
-**整体 MVP 完成度估算：迭代 1 完成 + 迭代 2 完成 P1-1/P1-2/P1-3/P1-4，约 87%**
+**整体 MVP 完成度估算：迭代 1 + 迭代 2 全部完成，约 92%**（剩余主要是技术债 / 发布相关）
 
 完整评估详见对话历史中的"项目全面评估报告"，本文件只保留**可执行的任务清单**。
 
@@ -100,8 +100,12 @@
     - `ThemeProvider.tsx` 用 `useSyncExternalStore` 订阅 localStorage + matchMedia（避开 React 19 `set-state-in-effect` 规则）
     - `ThemeToggle.tsx` 三档循环按钮，已接入 Nav 右侧
   - `<html>` 加 `suppressHydrationWarning`（dark class 由内联脚本注入，是预期内的差异）
-- [ ] **P1-5** 详情页加"目录（TOC）"：从 `rehype-slug` 注入的 id 提取，desktop 右侧 sticky，mobile 折叠
-- [ ] **P1-6** 加 `app/loading.tsx`（最小骨架屏）
+- [x] **P1-5** 详情页 TOC（仅 blog，works 不接入 —— 摄影/项目无 TOC 需求）：
+  - `lib/toc.ts` 的 `extractHeadings()` 从 raw mdx 提取 H2/H3，用 `github-slugger` 保证 id 与 `rehype-slug` 完全一致；处理代码围栏 / markdown 强调标记
+  - `components/blog/TableOfContents.tsx` 提供 `variant: "collapsible" | "static"` 两种渲染形态
+  - blog 详情页：lg 以下用 collapsible 放在文章上方；lg+ 用 fixed sticky 浮在主体右侧空白处，定位公式 `right-[max(1rem,calc((100vw-48rem)/2-14rem))]`
+  - 不做"当前阅读位置高亮"（IntersectionObserver），保持 server component 纯净，后续按需升级
+- [x] **P1-6** 全局 `app/loading.tsx`：`animate-pulse` 灰条骨架屏，模拟 H1 + 段落 + 列表项；含 `role="status"` / `aria-busy` / `sr-only` 提示。当前所有路由 SSG，主要用于客户端导航过渡兜底。
 
 **完成标准**：内容体验对齐主流个人博客。
 
@@ -153,13 +157,14 @@
 - 2026-05-29 · 迭代 1 · 完成项：P0-6, P0-7 · 备注：首页新增"最新文章"区块（最多展示 3 篇 + "查看全部"链接，与 hero 和"去看看"卡片样式区分使用 divide-y 列表风格，更轻盈）；删除空目录 `styles/`，全仓 0 处引用。**迭代 1 全部完成**，`pnpm lint` / `pnpm build` 全绿，9 个静态路由全部正常。
 - 2026-06-02 · 迭代 2 · 完成项：P1-1, P1-2, P1-3 · 备注：新增 `lib/date.ts`（`formatDate` 输出 `YYYY年MM月DD日`、`getYear`、`groupByYear`），原生 `Date` 实现避免 `date-fns/format` bundle；blog / works 列表改造为"左侧 sticky 年份 + 右侧 divide-y"双列布局，移动端自动堆叠；`/about` 改为读 `content/about.mdx`，新增 `getSinglePage(name)` 走单页路径不污染 collection 抽象。`pnpm lint` / `pnpm build` 全绿。
 - 2026-06-02 · 迭代 2 · 完成项：P1-4 · 备注：暗黑模式手动切换，三档（light / dark / system，默认 light）。颜色 SSOT 抽到 `lib/theme.ts` 的 `themeTokens`，结构 `{ name: { light, dark } }`，`compileThemeCss()` 编译为 `:root` / `:root.dark` 的 CSS 变量；`globals.css` 切换为 `@custom-variant dark (&:where(.dark, .dark *))`（删除原 `@media prefers-color-scheme`）；`<head>` 内联 `ThemeScript` 同步注入 dark class，无 FOUC；`ThemeProvider` 用 `useSyncExternalStore` 订阅 localStorage + matchMedia，绕开 React 19 `react-hooks/set-state-in-effect`；`ThemeToggle` 加入 Nav 右侧。`pnpm lint` / `pnpm build` 全绿。
+- 2026-06-02 · 迭代 2 · 完成项：P1-5, P1-6 · 备注：新增 `lib/toc.ts` 的 `extractHeadings()`（用 `github-slugger` 与 rehype-slug 同款 id 算法，处理代码围栏 / 强调标记），`components/blog/TableOfContents.tsx` 双 variant（collapsible / static）；blog 详情页 lg+ 浮在主体右侧 sticky，lg 以下 details 折叠；works 不接 TOC（摄影/项目场景）。新增 `app/loading.tsx` 全局骨架屏（animate-pulse 灰条 + a11y）。验证：HTML 中 `id=` 与 TOC `href=` 7 个锚点完全对应。`pnpm lint` / `pnpm build` 全绿。**迭代 2 全部完成。**
 
 ---
 
 ## 9. 待讨论 / 待用户确认
 
 - [x] 暗黑模式（P1-4）是否做手动切换？→ **已确认：做手动切换，三档 light/dark/system，默认 light**（2026-06-02）
-- [ ] TOC（P1-5）按移动端优先还是桌面优先做？（项目默认无 PC 适配约束，需用户确认）
+- [x] TOC（P1-5）按移动端优先还是桌面优先做？→ **已确认：桌面右侧 sticky 为主，移动端 details/summary 折叠**（2026-06-02）
 - [ ] 是否引入 zod（P2-3）？引入后 bundle 会增加约 8KB（gzip）。
 - [ ] CI（P2-6）平台用 GitHub Actions 还是 Vercel 自带？
 
