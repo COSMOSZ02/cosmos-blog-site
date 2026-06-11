@@ -39,45 +39,77 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 这是一个基于 Next.js 的个人网站，使用 TypeScript 编写。
 
-## Project Structure Planning
+## Project Structure
 
+```
 cosmos-blog-site/
-├── app/                          # Next.js App Router
-│   ├── layout.tsx                # 全局布局
-│   ├── page.tsx                  # 首页（你是谁）
-│   ├── about/page.tsx            # 简历详情
+├── app/                          # Next.js App Router（路由层）
+│   ├── layout.tsx                # 根布局：字体 / 主题 / Nav / Footer / metadata / 分析
+│   ├── page.tsx                  # 首页（hero + 最新文章 + 入口卡片）
+│   ├── globals.css               # Tailwind v4 + @custom-variant dark + theme 变量映射
+│   ├── loading.tsx               # 全局骨架屏
+│   ├── not-found.tsx             # 全站 404
+│   ├── error.tsx                 # 路由段错误边界
+│   ├── global-error.tsx          # 根级崩溃兜底
+│   ├── opengraph-image.tsx       # 站点根动态 OG 图（next/og）
+│   ├── sitemap.ts                # /sitemap.xml（构建期生成）
+│   ├── robots.ts                 # /robots.txt
+│   ├── about/page.tsx            # 关于（读 content/about.mdx）
 │   ├── blog/
-│   │   ├── page.tsx              # 文章列表
-│   │   └── [slug]/page.tsx       # 文章详情
-│   ├── works/                    # 作品集
-│   │   ├── page.tsx              # 作品列表
-│   │   └── [slug]/page.tsx       # 作品详情
-│   └── api/
-│       └── download/route.ts     # 文件下载代理（可选）
+│   │   ├── page.tsx              # 文章列表（按年份分组）
+│   │   └── [slug]/page.tsx       # 文章详情（SSG + TOC + JSON-LD）
+│   └── works/
+│       ├── page.tsx              # 作品列表（按年份分组）
+│       └── [slug]/page.tsx       # 作品详情（SSG + JSON-LD）
 │
-├── content/                      # ✨ 所有内容的源
-│   ├── posts/                    # 博客文章 .mdx
-│   │   ├── 2026-05-28-hello.mdx
-│   │   └── ...
-│   └── works/                    # 作品集 .mdx
-│       └── photo-shenzhen.mdx
+├── content/                      # ✨ 所有内容的源（mdx）
+│   ├── about.mdx                 # 单页内容
+│   ├── posts/                    # 博客文章
+│   │   ├── _template.mdx         # 模板（以 _ 开头，自动跳过）
+│   │   └── hello-world.mdx
+│   └── works/                    # 作品集
+│       ├── _template.mdx
+│       └── this-blog.mdx
 │
-├── components/                   # UI 组件
+├── components/
 │   ├── ui/                       # 通用组件
-│   ├── BlogCard.tsx
-│   └── WorkCard.tsx
+│   │   ├── BackLink.tsx          # "← 返回 X"
+│   │   └── JsonLd.tsx            # <script type="application/ld+json">
+│   ├── layout/                   # 站点骨架
+│   │   ├── Nav.tsx               # 顶部导航（含移动端汉堡 + 主题切换）
+│   │   └── Footer.tsx
+│   ├── theme/                    # 主题切换体系
+│   │   ├── ThemeProvider.tsx     # useSyncExternalStore 订阅 localStorage / 系统偏好
+│   │   ├── ThemeToggle.tsx       # 三档循环按钮（light/dark/system）
+│   │   ├── ThemeScript.tsx       # <head> 内联 FOUC 防护脚本
+│   │   └── ThemeStyles.tsx       # 注入颜色 token CSS 变量
+│   └── blog/
+│       └── TableOfContents.tsx   # 详情页目录（collapsible / static 双形态）
 │
-├── lib/                          # 工具函数
-│   ├── mdx.ts                    # MDX 处理
-│   └── storage.ts                # 对象存储 URL 拼接
+├── lib/                          # 工具函数（多为 server-only）
+│   ├── mdx.ts                    # 内容读取 / 解析 / 路径穿越防护 / 阅读时长
+│   ├── mdx-options.ts            # MDXRemote 编译选项（remark/rehype 插件）SSOT
+│   ├── content-schema.ts         # zod front-matter schema + 错误格式化
+│   ├── toc.ts                    # 从 mdx 提取 H2/H3（与 rehype-slug 同款 id 算法）
+│   ├── date.ts                   # formatDate（YYYY年MM月DD日）/ groupByYear
+│   ├── profile.ts                # 站点 / 作者 / 导航 / 社交信息 SSOT
+│   ├── site.ts                   # 站点 URL 解析链（getSiteUrl / absoluteUrl）
+│   ├── theme.ts                  # 颜色 token SSOT + compileThemeCss
+│   ├── structured-data.ts        # JSON-LD helper（BlogPosting / CreativeWork）
+│   ├── utils.ts                  # cn() 类名合并
+│   └── *.test.ts                 # vitest 单测（content-schema / mdx）
 │
-├── public/                       # 小静态资源（favicon、logo）
-│   └── ...
-│
+├── types/shims.d.ts              # gray-matter / reading-time 最小类型声明
+├── .github/workflows/ci.yml      # GitHub Actions：lint → tsc → test → build
+├── AGENTS.md                     # AI 协作规范（含 components 命名约定）
+├── ROADMAP.md                    # 迭代开发计划（单一来源）
+├── next.config.ts                # 远程图片白名单 + 安全响应头（含 CSP Report-Only）
+├── vitest.config.mts             # 测试配置（server-only stub + @/ 别名）
+├── eslint.config.mjs
+├── postcss.config.mjs
 ├── package.json
-├── tailwind.config.ts
-├── next.config.mjs
 └── tsconfig.json
+```
 
 ## 环境变量与部署
 
