@@ -117,21 +117,21 @@ cosmos-blog-site/
 
 `metadataBase` / OG / sitemap 等需要 absolute URL 的地方，统一从 `lib/site.ts` 的 `getSiteUrl()` 获取，按下面的优先级解析：
 
-| 优先级 | 变量 | 来源 | 何时填 |
+| 优先级 | 来源 | 取值 | 何时生效 |
 |---|---|---|---|
-| 1 | `NEXT_PUBLIC_SITE_URL` | 你手动填 | 买了域名后在 Vercel Project → Environment Variables 加（如 `https://cosmos.example.com`） |
-| 2 | `VERCEL_PROJECT_PRODUCTION_URL` | Vercel 自动注入 | production 部署的稳定子域（不带协议） |
-| 3 | `VERCEL_URL` | Vercel 自动注入 | preview / branch 部署的临时子域 |
+| 1 | `NEXT_PUBLIC_SITE_URL` | 你手动填 | 显式覆盖（逃生口），在 Vercel Environment Variables 临时改写规范 URL |
+| 2 | `VERCEL_URL`（仅 `VERCEL_ENV === "preview"`） | Vercel 自动注入 | preview / branch 部署走临时子域，避免预览的 OG/sitemap 指向正式域名 |
+| 3 | `https://cosmoszh.com`（`lib/site.ts` 常量 `SITE_URL`） | 代码内硬编码 | 生产环境（`NODE_ENV === "production"`）的规范 URL |
 | 4 | `http://localhost:3000` | 兜底 | 本地开发 |
 
-**当前状态**：还未购买域名，自动走 #2 / #3 的 `*.vercel.app` 子域。买域名后只需在 Vercel 加 `NEXT_PUBLIC_SITE_URL`，全站 metadata / sitemap 自动切换。
+**当前状态**：已购买域名 `cosmoszh.com`，作为生产环境规范 URL 写入 `lib/site.ts`。生产构建（Vercel production / 自建）全站 metadata / sitemap / OG 自动用 `https://cosmoszh.com`；preview 仍走 `*.vercel.app`；本地走 `localhost`。仍需在 **Vercel 项目 Domains 里绑定该域名并配置 DNS** 才能真正访问。
 
 ### Vercel 一键部署
 
 1. push 到 GitHub
 2. 在 Vercel 上 Import 仓库（建议关联 `master` 为 production 分支）
 3. 不需要任何额外环境变量；首次部署后会自动绑定 `*.vercel.app`
-4. 后续买了域名 → 在 Vercel 项目 Domains 里加自定义域 + 在 Environment Variables 加 `NEXT_PUBLIC_SITE_URL`
+4. 域名 `cosmoszh.com` 已购买：在 Vercel 项目 Domains 里添加该自定义域并按提示配置 DNS（规范 URL 已硬编码在 `lib/site.ts`，无需再加 `NEXT_PUBLIC_SITE_URL`，除非要临时覆盖）
 
 ### CI
 

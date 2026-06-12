@@ -18,7 +18,7 @@
 - **作者 / 站长简介**：_(待补充)_
 - **内容方向（会写哪些主题）**：前端开发、科普、风光/天文摄影
 - **设计基调 / 视觉偏好**：简约线条风格
-- **部署环境与域名**：_(待补充)_
+- **部署环境与域名**：Vercel 部署，自定义域名 `cosmoszh.com`（已购买）
 - **非目标（明确不做的事）**：_(待补充)_
 - **其他补充**：_(待补充)_
 
@@ -55,7 +55,7 @@
 ### 未完成 / 已知缺口
 - 仅 1 篇真实文章 + 1 件作品（**内容侧**任务，非工程任务）
 - TOC 当前阅读位置高亮（IntersectionObserver）尚未实现，作为后续增强
-- 尚未购买域名（`NEXT_PUBLIC_SITE_URL` 未填）；当前 `metadataBase` 走 Vercel 自动注入的 `*.vercel.app` 子域
+- 已购买域名 `cosmoszh.com`，作为生产环境规范 URL 硬编码进 `lib/site.ts`；生产构建 `metadataBase` 走 `https://cosmoszh.com`，preview 走 `*.vercel.app`，本地走 `localhost`
 - CSP 处于 Report-Only 观察期；待部署后浏览观察，无违规即切正式头（R5 风险登记）
 
 **整体 MVP 完成度估算：迭代 1 + 2 + 3 + 4 全部 P0/P1/P2/P3 任务收尾，约 100%**
